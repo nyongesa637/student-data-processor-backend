@@ -6,6 +6,7 @@ import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.model.StylesTable;
+import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -113,7 +114,7 @@ public class DataProcessingService {
         }
 
         @Override
-        public void cell(String cellReference, String formattedValue, XSSFSheetXMLHandler.xssfComment comment) {
+        public void cell(String cellReference, String formattedValue, XSSFComment comment) {
             // Extract column index from cell reference (e.g., "A1" -> 0, "B1" -> 1)
             int colIdx = 0;
             for (int i = 0; i < cellReference.length(); i++) {
