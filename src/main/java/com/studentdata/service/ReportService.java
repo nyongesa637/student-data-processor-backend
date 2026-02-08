@@ -1,5 +1,10 @@
 package com.studentdata.service;
 
+import com.lowagie.text.*;
+import com.lowagie.text.Font;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 import com.opencsv.CSVWriter;
 import com.studentdata.entity.Student;
 import com.studentdata.repository.StudentRepository;
@@ -12,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.util.List;
@@ -99,6 +105,50 @@ public class ReportService {
             }
 
             csvWriter.flush();
+            return out.toByteArray();
+        }
+    }
+
+    public byte[] exportToPdf(String search, String studentClass) throws Exception {
+        List<Student> students = getFilteredStudents(search, studentClass);
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Document document = new Document(PageSize.A4.rotate());
+            PdfWriter.getInstance(document, out);
+            document.open();
+
+            Font titleFont = new Font(Font.HELVETICA, 16, Font.BOLD);
+            Paragraph title = new Paragraph("Student Report", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(20);
+            document.add(title);
+
+            PdfPTable table = new PdfPTable(7);
+            table.setWidthPercentage(100);
+            table.setWidths(new float[]{1, 2, 2, 2, 2, 1.5f, 1});
+
+            Font headerFont = new Font(Font.HELVETICA, 10, Font.BOLD, Color.WHITE);
+            String[] headers = {"ID", "Student ID", "First Name", "Last Name", "DOB", "Class", "Score"};
+            for (String header : headers) {
+                PdfPCell cell = new PdfPCell(new Phrase(header, headerFont));
+                cell.setBackgroundColor(new Color(63, 81, 181));
+                cell.setPadding(5);
+                table.addCell(cell);
+            }
+
+            Font cellFont = new Font(Font.HELVETICA, 9);
+            for (Student s : students) {
+                table.addCell(new Phrase(String.valueOf(s.getId()), cellFont));
+                table.addCell(new Phrase(s.getStudentId(), cellFont));
+                table.addCell(new Phrase(s.getFirstName(), cellFont));
+                table.addCell(new Phrase(s.getLastName(), cellFont));
+                table.addCell(new Phrase(s.getDob(), cellFont));
+                table.addCell(new Phrase(s.getStudentClass(), cellFont));
+                table.addCell(new Phrase(String.valueOf(s.getScore()), cellFont));
+            }
+
+            document.add(table);
+            document.close();
             return out.toByteArray();
         }
     }
