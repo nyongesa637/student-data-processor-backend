@@ -35,21 +35,254 @@ chmod +x run.sh
 ./run.sh --skip-setup
 ```
 
-## Manual Setup
+The `run.sh` script automatically detects your OS and package manager, installs missing prerequisites, creates the database, and starts the server. See [Automated Setup Script](#automated-setup-script) for details.
+
+## Manual Setup by Operating System
+
+### Linux
+
+#### Install Java 17
+
+**Fedora / RHEL / CentOS:**
+```bash
+sudo dnf install -y java-17-openjdk-devel
+```
+
+**Ubuntu / Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install -y openjdk-17-jdk
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S jdk17-openjdk
+```
+
+Verify installation:
+```bash
+java -version
+```
+
+#### Install Maven
+
+**Fedora / RHEL / CentOS:**
+```bash
+sudo dnf install -y maven
+```
+
+**Ubuntu / Debian:**
+```bash
+sudo apt-get install -y maven
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S maven
+```
+
+Verify installation:
+```bash
+mvn -v
+```
+
+#### Install and Configure PostgreSQL
+
+**Fedora / RHEL / CentOS:**
+```bash
+sudo dnf install -y postgresql-server postgresql
+sudo postgresql-setup --initdb
+sudo systemctl enable --now postgresql
+```
+
+**Ubuntu / Debian:**
+```bash
+sudo apt-get install -y postgresql postgresql-client
+sudo systemctl enable --now postgresql
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S postgresql
+sudo -u postgres initdb -D /var/lib/postgres/data
+sudo systemctl enable --now postgresql
+```
+
+#### Create the Database (Linux)
 
 ```bash
-# 1. Create the PostgreSQL database
-psql -U postgres -c "CREATE DATABASE student_data_processor;"
+# Switch to the postgres user and create the database
+sudo -u postgres psql -c "CREATE DATABASE student_data_processor;"
 
-# 2. Create the output directory
+# OR if using password authentication:
+psql -U postgres -h localhost -c "CREATE DATABASE student_data_processor;"
+```
+
+#### Create the Output Directory (Linux)
+
+```bash
 sudo mkdir -p /var/log/applications/API/dataprocessing/
 sudo chmod 777 /var/log/applications/API/dataprocessing/
+```
 
-# 3. Build and run
+---
+
+### macOS
+
+#### Install Java 17
+
+```bash
+# Using Homebrew (install from https://brew.sh if not installed)
+brew install openjdk@17
+
+# Symlink so the system finds it
+sudo ln -sfn "$(brew --prefix)/opt/openjdk@17/libexec/openjdk.jdk" \
+  /Library/Java/JavaVirtualMachines/openjdk-17.jdk
+```
+
+Verify installation:
+```bash
+java -version
+```
+
+#### Install Maven
+
+```bash
+brew install maven
+```
+
+Verify installation:
+```bash
+mvn -v
+```
+
+#### Install and Configure PostgreSQL
+
+```bash
+brew install postgresql@15
+brew services start postgresql@15
+```
+
+#### Create the Database (macOS)
+
+```bash
+psql postgres -c "CREATE DATABASE student_data_processor;"
+```
+
+#### Create the Output Directory (macOS)
+
+```bash
+sudo mkdir -p /var/log/applications/API/dataprocessing/
+sudo chmod 777 /var/log/applications/API/dataprocessing/
+```
+
+---
+
+### Windows
+
+#### Install Java 17
+
+**Using winget (Windows 10/11):**
+```powershell
+winget install --id Microsoft.OpenJDK.17
+```
+
+**Using Chocolatey:**
+```powershell
+choco install openjdk17 -y
+```
+
+**Manual install:**
+Download from [Adoptium Temurin](https://adoptium.net/temurin/releases/?version=17) and add `JAVA_HOME` to your system environment variables.
+
+Verify installation (open a new terminal):
+```powershell
+java -version
+```
+
+#### Install Maven
+
+**Using Chocolatey:**
+```powershell
+choco install maven -y
+```
+
+**Manual install:**
+Download from [Apache Maven](https://maven.apache.org/download.cgi), extract, and add the `bin` directory to your `PATH`.
+
+Verify installation:
+```powershell
+mvn -v
+```
+
+#### Install and Configure PostgreSQL
+
+**Using Chocolatey:**
+```powershell
+choco install postgresql15 -y
+```
+
+**Manual install:**
+Download from [PostgreSQL for Windows](https://www.postgresql.org/download/windows/) and run the installer. The installer will prompt you to set a password for the `postgres` user.
+
+#### Create the Database (Windows)
+
+Open a terminal and run:
+```powershell
+psql -U postgres -c "CREATE DATABASE student_data_processor;"
+```
+
+You will be prompted for the `postgres` password you set during installation.
+
+#### Create the Output Directory (Windows)
+
+The default output path `/var/log/applications/API/dataprocessing/` does not exist on Windows. Create a directory and update the configuration:
+
+```powershell
+mkdir C:\dataprocessing
+```
+
+Then edit `src/main/resources/application.properties` and change:
+```properties
+app.output.directory=C:/dataprocessing/
+```
+
+---
+
+### Build and Run
+
+After completing the setup for your OS:
+
+```bash
+# Build the project
+mvn clean compile
+
+# Run the server
 mvn spring-boot:run
 ```
 
 The server starts on **http://localhost:8080**.
+
+## Automated Setup Script
+
+The `run.sh` script handles the full setup automatically on Linux, macOS, and Windows (Git Bash / WSL / MSYS2):
+
+```bash
+./run.sh                  # Full setup: install deps, create DB, build & run
+./run.sh --skip-setup     # Skip installation, validate & run only
+./run.sh -s               # Short alias for --skip-setup
+./run.sh --check          # Only validate environment, don't run
+./run.sh --help           # Show help
+```
+
+The script:
+- Detects your OS and package manager (dnf, apt, pacman, zypper, brew, winget, choco)
+- Installs Java 17, Maven, and PostgreSQL if missing
+- Starts PostgreSQL if it's not running
+- Creates the `student_data_processor` database
+- Creates the output directory
+- Builds the project with Maven
+- Starts the Spring Boot server
 
 ## Configuration
 
