@@ -1,5 +1,6 @@
 package com.studentdata.service;
 
+import com.opencsv.CSVWriter;
 import com.studentdata.entity.Student;
 import com.studentdata.repository.StudentRepository;
 import org.apache.poi.ss.usermodel.Row;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
 import java.util.List;
 
 @Service
@@ -72,6 +74,31 @@ public class ReportService {
 
             workbook.write(out);
             workbook.dispose();
+            return out.toByteArray();
+        }
+    }
+
+    public byte[] exportToCsv(String search, String studentClass) throws Exception {
+        List<Student> students = getFilteredStudents(search, studentClass);
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(out))) {
+
+            csvWriter.writeNext(new String[]{"ID", "Student ID", "First Name", "Last Name", "DOB", "Class", "Score"});
+
+            for (Student s : students) {
+                csvWriter.writeNext(new String[]{
+                        String.valueOf(s.getId()),
+                        s.getStudentId(),
+                        s.getFirstName(),
+                        s.getLastName(),
+                        s.getDob(),
+                        s.getStudentClass(),
+                        String.valueOf(s.getScore())
+                });
+            }
+
+            csvWriter.flush();
             return out.toByteArray();
         }
     }
