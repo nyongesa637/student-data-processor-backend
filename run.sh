@@ -69,6 +69,32 @@ done
 # --- Validation functions ---
 has_cmd()   { command -v "$1" &>/dev/null; }
 
+# --- Read DB credentials from application.properties ---
+read_db_config() {
+    local props="$SCRIPT_DIR/src/main/resources/application.properties"
+    if [[ -f "$props" ]]; then
+        DB_USER=$(grep -oP 'spring\.datasource\.username=\K.*' "$props" 2>/dev/null || echo "postgres")
+        DB_PASS=$(grep -oP 'spring\.datasource\.password=\K.*' "$props" 2>/dev/null || echo "")
+        DB_URL=$(grep -oP 'spring\.datasource\.url=\K.*' "$props" 2>/dev/null || echo "")
+        DB_HOST=$(echo "$DB_URL" | sed -E 's|.*://([^:/]+).*|\1|' 2>/dev/null || echo "localhost")
+        DB_PORT=$(echo "$DB_URL" | sed -E 's|.*:([0-9]+)/.*|\1|' 2>/dev/null || echo "5432")
+        DB_NAME=$(echo "$DB_URL" | sed -E 's|.*/([^?]+).*|\1|' 2>/dev/null || echo "student_data_processor")
+        SERVER_PORT=$(grep -oP 'server\.port=\K.*' "$props" 2>/dev/null || echo "9090")
+    else
+        DB_USER="postgres"
+        DB_PASS=""
+        DB_HOST="localhost"
+        DB_PORT="5432"
+        DB_NAME="student_data_processor"
+        SERVER_PORT="9090"
+    fi
+}
+
+# Helper to run psql with the configured credentials
+run_psql() {
+    PGPASSWORD="$DB_PASS" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" "$@" 2>/dev/null
+}
+
 check_java() {
     if has_cmd java; then
         local ver
@@ -107,24 +133,24 @@ check_postgres() {
 }
 
 check_pg_running() {
-    if pg_isready -q 2>/dev/null; then
-        ok "PostgreSQL is running"
+    if pg_isready -h "$DB_HOST" -p "$DB_PORT" -q 2>/dev/null; then
+        ok "PostgreSQL is running on $DB_HOST:$DB_PORT"
         return 0
-    elif has_cmd psql && psql -U postgres -c "SELECT 1" &>/dev/null; then
-        ok "PostgreSQL is running"
+    elif has_cmd psql && run_psql -c "SELECT 1" &>/dev/null; then
+        ok "PostgreSQL is running on $DB_HOST:$DB_PORT"
         return 0
     else
-        warn "PostgreSQL does not appear to be running"
+        warn "PostgreSQL does not appear to be running on $DB_HOST:$DB_PORT"
         return 1
     fi
 }
 
 check_database() {
-    if psql -U postgres -lqt 2>/dev/null | cut -d\| -f1 | grep -qw student_data_processor; then
-        ok "Database 'student_data_processor' exists"
+    if run_psql -lqt | cut -d\| -f1 | grep -qw "$DB_NAME"; then
+        ok "Database '$DB_NAME' exists"
         return 0
     else
-        warn "Database 'student_data_processor' not found"
+        warn "Database '$DB_NAME' not found"
         return 1
     fi
 }
@@ -238,11 +264,11 @@ create_database() {
         info "Database already exists, skipping"
         return 0
     fi
-    if psql -U postgres -c "CREATE DATABASE student_data_processor;" 2>/dev/null; then
-        ok "Database 'student_data_processor' created"
+    if run_psql -c "CREATE DATABASE $DB_NAME;"; then
+        ok "Database '$DB_NAME' created"
     else
         warn "Could not create database automatically."
-        info "Run manually: psql -U postgres -c \"CREATE DATABASE student_data_processor;\""
+        info "Run manually: psql -U $DB_USER -h $DB_HOST -c \"CREATE DATABASE $DB_NAME;\""
     fi
 }
 
@@ -271,6 +297,9 @@ main() {
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     cd "$SCRIPT_DIR"
     info "Working directory: $(pwd)"
+
+    # Read DB and server config from application.properties
+    read_db_config
 
     if [[ "$SKIP_SETUP" == true || "$CHECK_ONLY" == true ]]; then
         header "Validating Environment"
@@ -342,7 +371,7 @@ main() {
 
     # Run
     header "Starting Backend Server"
-    info "URL: http://localhost:8080"
+    info "URL: http://localhost:$SERVER_PORT"
     info "Press Ctrl+C to stop"
     echo ""
     mvn spring-boot:run

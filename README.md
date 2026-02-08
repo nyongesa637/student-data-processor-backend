@@ -261,7 +261,7 @@ mvn clean compile
 mvn spring-boot:run
 ```
 
-The server starts on **http://localhost:8080**.
+The server starts on **http://localhost:9090**.
 
 ## Automated Setup Script
 
@@ -290,7 +290,7 @@ Edit `src/main/resources/application.properties`:
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `server.port` | `8080` | Server port |
+| `server.port` | `9090` | Server port |
 | `spring.datasource.url` | `jdbc:postgresql://localhost:5432/student_data_processor` | Database URL |
 | `spring.datasource.username` | `postgres` | Database username |
 | `spring.datasource.password` | `postgres` | Database password |
@@ -307,7 +307,7 @@ Edit `src/main/resources/application.properties`:
 
 **Example:**
 ```bash
-curl -X POST "http://localhost:8080/api/generate?count=1000"
+curl -X POST "http://localhost:9090/api/generate?count=1000"
 ```
 
 **Response:**
@@ -325,7 +325,7 @@ Generated Excel contains columns: Student ID, First Name, Last Name, DOB, Class 
 
 **Example:**
 ```bash
-curl -X POST -F "file=@students.xlsx" "http://localhost:8080/api/process"
+curl -X POST -F "file=@students.xlsx" "http://localhost:9090/api/process"
 ```
 
 **Response:**
@@ -343,7 +343,7 @@ Uses SAX-based streaming parser for memory-efficient processing of large files. 
 
 **Example:**
 ```bash
-curl -X POST -F "file=@students_processed.csv" "http://localhost:8080/api/upload"
+curl -X POST -F "file=@students_processed.csv" "http://localhost:9090/api/upload"
 ```
 
 **Response:**
@@ -365,12 +365,12 @@ Uses batch inserts (1000 records per batch) for optimal database performance. Ea
 
 **Pagination example:**
 ```bash
-curl "http://localhost:8080/api/students?page=0&size=25&studentClass=A"
+curl "http://localhost:9090/api/students?page=0&size=25&studentClass=A"
 ```
 
 **Export example:**
 ```bash
-curl -o students.pdf "http://localhost:8080/api/students/export/pdf?studentClass=B"
+curl -o students.pdf "http://localhost:9090/api/students/export/pdf?studentClass=B"
 ```
 
 ## Project Structure
