@@ -10,4 +10,8 @@ import java.util.List;
 public interface ChangelogEntryRepository extends JpaRepository<ChangelogEntry, Long> {
 
     List<ChangelogEntry> findAllByOrderByReleaseDateDesc();
+
+    List<ChangelogEntry> findByComponentOrderByReleaseDateDesc(String component);
+
+    boolean existsByVersionAndComponent(String version, String component);
 }

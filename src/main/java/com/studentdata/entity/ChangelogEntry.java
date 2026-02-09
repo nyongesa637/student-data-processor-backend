@@ -20,12 +20,23 @@ public class ChangelogEntry {
     @Column(nullable = false, length = 2000)
     private String changes;
 
+    @Column(columnDefinition = "varchar(255) default 'GENERAL'")
+    private String component;
+
     public ChangelogEntry() {}
 
     public ChangelogEntry(String version, LocalDate releaseDate, String changes) {
         this.version = version;
         this.releaseDate = releaseDate;
         this.changes = changes;
+        this.component = "GENERAL";
+    }
+
+    public ChangelogEntry(String version, LocalDate releaseDate, String changes, String component) {
+        this.version = version;
+        this.releaseDate = releaseDate;
+        this.changes = changes;
+        this.component = component;
     }
 
     public Long getId() { return id; }
@@ -39,4 +50,7 @@ public class ChangelogEntry {
 
     public String getChanges() { return changes; }
     public void setChanges(String changes) { this.changes = changes; }
+
+    public String getComponent() { return component; }
+    public void setComponent(String component) { this.component = component; }
 }
