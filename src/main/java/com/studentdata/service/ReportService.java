@@ -110,11 +110,13 @@ public class ReportService {
     }
 
     public byte[] exportToPdf(String search, String studentClass) throws Exception {
-        List<Student> students = getFilteredStudents(search, studentClass);
+        boolean hasSearch = search != null && !search.isEmpty();
+        boolean hasClass = studentClass != null && !studentClass.isEmpty();
 
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream(65536)) {
             Document document = new Document(PageSize.A4.rotate());
-            PdfWriter.getInstance(document, out);
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+            writer.setFullCompression();
             document.open();
 
             Font titleFont = new Font(Font.HELVETICA, 16, Font.BOLD);
@@ -126,27 +128,52 @@ public class ReportService {
             PdfPTable table = new PdfPTable(7);
             table.setWidthPercentage(100);
             table.setWidths(new float[]{1, 2, 2, 2, 2, 1.5f, 1});
+            table.setHeaderRows(1);
 
             Font headerFont = new Font(Font.HELVETICA, 10, Font.BOLD, Color.WHITE);
             String[] headers = {"ID", "Student ID", "First Name", "Last Name", "DOB", "Class", "Score"};
             for (String header : headers) {
                 PdfPCell cell = new PdfPCell(new Phrase(header, headerFont));
-                cell.setBackgroundColor(new Color(63, 81, 181));
+                cell.setBackgroundColor(new Color(14, 165, 233));
                 cell.setPadding(5);
                 table.addCell(cell);
             }
 
+            // Process in batches for memory efficiency and incremental flushing
             Font cellFont = new Font(Font.HELVETICA, 9);
-            for (Student s : students) {
-                table.addCell(new Phrase(String.valueOf(s.getId()), cellFont));
-                table.addCell(new Phrase(s.getStudentId(), cellFont));
-                table.addCell(new Phrase(s.getFirstName(), cellFont));
-                table.addCell(new Phrase(s.getLastName(), cellFont));
-                table.addCell(new Phrase(s.getDob(), cellFont));
-                table.addCell(new Phrase(s.getStudentClass(), cellFont));
-                table.addCell(new Phrase(String.valueOf(s.getScore()), cellFont));
-            }
+            int batchSize = 1000;
+            int pageNum = 0;
+            Page<Student> page;
+            table.setComplete(false);
 
+            do {
+                Pageable pageable = PageRequest.of(pageNum, batchSize, Sort.by("id").ascending());
+
+                if (hasSearch && hasClass) {
+                    page = studentRepository.findByStudentIdContainingIgnoreCaseAndStudentClass(search, studentClass, pageable);
+                } else if (hasSearch) {
+                    page = studentRepository.findByStudentIdContainingIgnoreCase(search, pageable);
+                } else if (hasClass) {
+                    page = studentRepository.findByStudentClass(studentClass, pageable);
+                } else {
+                    page = studentRepository.findAll(pageable);
+                }
+
+                for (Student s : page.getContent()) {
+                    table.addCell(new Phrase(String.valueOf(s.getId()), cellFont));
+                    table.addCell(new Phrase(s.getStudentId(), cellFont));
+                    table.addCell(new Phrase(s.getFirstName(), cellFont));
+                    table.addCell(new Phrase(s.getLastName(), cellFont));
+                    table.addCell(new Phrase(s.getDob(), cellFont));
+                    table.addCell(new Phrase(s.getStudentClass(), cellFont));
+                    table.addCell(new Phrase(String.valueOf(s.getScore()), cellFont));
+                }
+
+                document.add(table);
+                pageNum++;
+            } while (page.hasNext());
+
+            table.setComplete(true);
             document.add(table);
             document.close();
             return out.toByteArray();
