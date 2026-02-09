@@ -7,6 +7,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -59,7 +60,7 @@ public class DataGenerationService {
 
         Random random = new Random();
 
-        try (SXSSFWorkbook workbook = new SXSSFWorkbook(100)) {
+        try (SXSSFWorkbook workbook = new SXSSFWorkbook(500)) {
             Sheet sheet = workbook.createSheet("Students");
 
             // Header row
@@ -73,7 +74,7 @@ public class DataGenerationService {
             // Data rows
             for (int i = 1; i <= count; i++) {
                 Row row = sheet.createRow(i);
-                row.createCell(0).setCellValue("STU" + String.format("%07d", i));
+                row.createCell(0).setCellValue(padStudentId(i));
                 row.createCell(1).setCellValue(FIRST_NAMES[random.nextInt(FIRST_NAMES.length)]);
                 row.createCell(2).setCellValue(LAST_NAMES[random.nextInt(LAST_NAMES.length)]);
                 row.createCell(3).setCellValue(generateRandomDob(random));
@@ -81,8 +82,9 @@ public class DataGenerationService {
                 row.createCell(5).setCellValue(random.nextInt(101)); // Score 0-100
             }
 
-            try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-                workbook.write(fos);
+            try (FileOutputStream fos = new FileOutputStream(filePath.toFile());
+                 BufferedOutputStream bos = new BufferedOutputStream(fos, 65536)) {
+                workbook.write(bos);
             }
 
             workbook.dispose();
@@ -90,6 +92,17 @@ public class DataGenerationService {
 
         notificationService.createNotification("GENERATION", "Generated " + count + " student records", "File: " + filename);
         return filename;
+    }
+
+    private static String padStudentId(int i) {
+        String num = Integer.toString(i);
+        StringBuilder sb = new StringBuilder(10);
+        sb.append("STU");
+        for (int p = num.length(); p < 7; p++) {
+            sb.append('0');
+        }
+        sb.append(num);
+        return sb.toString();
     }
 
     private String generateRandomDob(Random random) {

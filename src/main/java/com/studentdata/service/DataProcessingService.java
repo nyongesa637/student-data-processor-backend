@@ -19,8 +19,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class DataProcessingService {
@@ -46,7 +44,7 @@ public class DataProcessingService {
         file.transferTo(tempFile.toFile());
 
         try (OPCPackage pkg = OPCPackage.open(tempFile.toFile());
-             CSVWriter csvWriter = new CSVWriter(new FileWriter(csvPath.toFile()))) {
+             CSVWriter csvWriter = new CSVWriter(new BufferedWriter(new FileWriter(csvPath.toFile()), 65536))) {
 
             ReadOnlySharedStringsTable strings = new ReadOnlySharedStringsTable(pkg);
             XSSFReader reader = new XSSFReader(pkg);
@@ -82,9 +80,9 @@ public class DataProcessingService {
 
     private static class SheetHandler implements XSSFSheetXMLHandler.SheetContentsHandler {
         private final CSVWriter csvWriter;
-        private List<String> currentRow;
-        private int currentRowNum = -1;
+        private final String[] currentRow = new String[6];
         private boolean isHeaderRow = true;
+        private boolean hasData = false;
 
         SheetHandler(CSVWriter csvWriter) {
             this.csvWriter = csvWriter;
@@ -92,37 +90,32 @@ public class DataProcessingService {
 
         @Override
         public void startRow(int rowNum) {
-            currentRowNum = rowNum;
-            currentRow = new ArrayList<>();
             isHeaderRow = (rowNum == 0);
+            hasData = false;
+            for (int i = 0; i < 6; i++) {
+                currentRow[i] = "";
+            }
         }
 
         @Override
         public void endRow(int rowNum) {
-            if (isHeaderRow || currentRow.isEmpty()) {
+            if (isHeaderRow || !hasData) {
                 return;
-            }
-
-            // Pad row to 6 columns if needed
-            while (currentRow.size() < 6) {
-                currentRow.add("");
             }
 
             // Add 10 to score (column index 5)
             try {
-                String scoreStr = currentRow.get(5);
-                double score = Double.parseDouble(scoreStr);
-                currentRow.set(5, String.valueOf((int) (score + 10)));
+                double score = Double.parseDouble(currentRow[5]);
+                currentRow[5] = String.valueOf((int) (score + 10));
             } catch (NumberFormatException e) {
                 // Keep original value if not a number
             }
 
-            csvWriter.writeNext(currentRow.toArray(new String[0]));
+            csvWriter.writeNext(currentRow);
         }
 
         @Override
         public void cell(String cellReference, String formattedValue, XSSFComment comment) {
-            // Extract column index from cell reference (e.g., "A1" -> 0, "B1" -> 1)
             int colIdx = 0;
             for (int i = 0; i < cellReference.length(); i++) {
                 char c = cellReference.charAt(i);
@@ -132,13 +125,12 @@ public class DataProcessingService {
                     break;
                 }
             }
-            colIdx--; // Convert from 1-based to 0-based
+            colIdx--;
 
-            // Pad list to reach the column index
-            while (currentRow.size() <= colIdx) {
-                currentRow.add("");
+            if (colIdx >= 0 && colIdx < 6) {
+                currentRow[colIdx] = formattedValue;
+                hasData = true;
             }
-            currentRow.set(colIdx, formattedValue);
         }
     }
 }
