@@ -3,7 +3,10 @@ package com.studentdata.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "students")
+@Table(name = "students", indexes = {
+        @Index(name = "idx_student_class", columnList = "student_class"),
+        @Index(name = "idx_student_id", columnList = "student_id")
+})
 public class Student {
 
     @Id

@@ -22,6 +22,12 @@ public class DataGenerationService {
     @Value("${app.output.directory}")
     private String outputDirectory;
 
+    private final NotificationService notificationService;
+
+    public DataGenerationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
     private static final String[] FIRST_NAMES = {
             "James", "Mary", "Robert", "Patricia", "John", "Jennifer", "Michael", "Linda",
             "David", "Elizabeth", "William", "Barbara", "Richard", "Susan", "Joseph", "Jessica",
@@ -82,6 +88,7 @@ public class DataGenerationService {
             workbook.dispose();
         }
 
+        notificationService.createNotification("GENERATION", "Generated " + count + " student records", "File: " + filename);
         return filename;
     }
 

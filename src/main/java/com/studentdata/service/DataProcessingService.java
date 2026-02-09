@@ -28,6 +28,12 @@ public class DataProcessingService {
     @Value("${app.output.directory}")
     private String outputDirectory;
 
+    private final NotificationService notificationService;
+
+    public DataProcessingService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
     public String processExcelToCsv(MultipartFile file) throws Exception {
         Path dirPath = Paths.get(outputDirectory);
         Files.createDirectories(dirPath);
@@ -60,6 +66,7 @@ public class DataProcessingService {
             Files.deleteIfExists(tempFile);
         }
 
+        notificationService.createNotification("PROCESSING", "Processed Excel to CSV", "File: " + csvFilename);
         return csvFilename;
     }
 

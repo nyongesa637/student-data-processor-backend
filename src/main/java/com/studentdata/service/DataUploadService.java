@@ -15,9 +15,11 @@ import java.util.List;
 public class DataUploadService {
 
     private final StudentRepository studentRepository;
+    private final NotificationService notificationService;
 
-    public DataUploadService(StudentRepository studentRepository) {
+    public DataUploadService(StudentRepository studentRepository, NotificationService notificationService) {
         this.studentRepository = studentRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -66,6 +68,7 @@ public class DataUploadService {
             }
         }
 
+        notificationService.createNotification("UPLOAD", "Uploaded " + totalRecords + " records to database", "Source: " + file.getOriginalFilename());
         return totalRecords;
     }
 }
