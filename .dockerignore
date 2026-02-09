@@ -1,0 +1,12 @@
+target
+.git
+.gitignore
+.idea
+*.iml
+.settings
+.project
+.classpath
+*.md
+*.log
+.greptile.yaml
+run.sh

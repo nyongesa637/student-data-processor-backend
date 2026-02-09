@@ -1,0 +1,29 @@
+version: 1
+
+repository:
+  name: student-data-processor-backend
+  owner: nyongesa637
+  platform: github
+
+language: java
+framework: spring-boot
+
+include:
+  - src/**/*.java
+  - src/**/*.properties
+  - pom.xml
+
+exclude:
+  - target/**
+  - "**/*Test.java"
+  - "**/*Tests.java"
+
+instructions: |
+  This is a Spring Boot 3.4.5 REST API using Java 17.
+  Uses constructor injection (no @Autowired annotations).
+  PostgreSQL database with Spring Data JPA and Hibernate.
+  Apache POI for Excel processing (SXSSFWorkbook for memory efficiency).
+  OpenCSV for CSV operations and OpenPDF for PDF generation.
+  Batch inserts of 1000 records for performance.
+  Server runs on port 9090 with CORS configured for the Angular frontend.
+  File output directory is configurable via app.output.directory property.
