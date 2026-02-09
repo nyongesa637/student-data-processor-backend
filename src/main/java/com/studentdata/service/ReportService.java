@@ -31,8 +31,15 @@ public class ReportService {
         this.studentRepository = studentRepository;
     }
 
-    public Page<Student> getStudents(int page, int size, String search, String studentClass) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+    public Page<Student> getStudents(int page, int size, String search, String studentClass, String sortBy, String sortDir) {
+        Sort sort;
+        if (sortBy != null && !sortBy.isEmpty()) {
+            Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+            sort = Sort.by(direction, sortBy);
+        } else {
+            sort = Sort.by("id").ascending();
+        }
+        Pageable pageable = PageRequest.of(page, size, sort);
 
         boolean hasSearch = search != null && !search.isEmpty();
         boolean hasClass = studentClass != null && !studentClass.isEmpty();

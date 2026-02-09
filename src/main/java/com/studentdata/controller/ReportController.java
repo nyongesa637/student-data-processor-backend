@@ -26,8 +26,10 @@ public class ReportController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String studentClass) {
-        return ResponseEntity.ok(reportService.getStudents(page, size, search, studentClass));
+            @RequestParam(required = false) String studentClass,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir) {
+        return ResponseEntity.ok(reportService.getStudents(page, size, search, studentClass, sortBy, sortDir));
     }
 
     @GetMapping("/classes")
